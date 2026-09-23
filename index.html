@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación WAN y VPN - CTP Santa Bárbara</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: #E2E8F0;
+            color: #1E293B;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* MODALES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .modal-card h2 {
+            color: #0F172A;
+            margin-bottom: 8px;
+            font-size: 1.4rem;
+        }
+
+        .modal-card p {
+            color: #64748B;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #CBD5E1;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #2563EB;
+        }
+
+        .btn-start {
+            width: 100%;
+            background-color: #2563EB;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-start:hover {
+            background-color: #1D4ED8;
+        }
+
+        /* ENCABEZADO FIJO */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: #1E293B;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-title h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .header-title span {
+            font-size: 0.8rem;
+            color: #94A3B8;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .badge {
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .badge-phase {
+            background-color: #F59E0B;
+            color: #FFFFFF;
+        }
+
+        .badge-timer, .badge-progress {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* LAYOUT PRINCIPAL */
+        main {
+            margin-top: 80px;
+            margin-bottom: 70px;
+            padding: 24px;
+            max-width: 1300px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+        }
+
+        .questions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .question-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #64748B;
+        }
+
+        .question-text {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: #1E293B;
+        }
+
+        .drop-zone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 140px;
+            height: 38px;
+            border: 2px dashed #CBD5E1;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            margin: 0 6px;
+            vertical-align: middle;
+            padding: 0 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.hovered {
+            background-color: #E0F2FE;
+            border-color: #0284C7;
+        }
+
+        .drop-zone.filled {
+            border-style: solid;
+            border-color: transparent;
+            background-color: transparent;
+        }
+
+        .sidebar-container {
+            position: sticky;
+            top: 94px;
+            height: fit-content;
+        }
+
+        .bank-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .bank-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-align: center;
+            color: #334155;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .draggable-btn {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-align: center;
+            cursor: grab;
+            border: 3px solid transparent;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .draggable-btn.selected-option {
+            border-color: #FACC15 !important;
+            transform: scale(1.02);
+        }
+
+        .draggable-btn.used {
+            opacity: 0.25;
+            cursor: not-allowed;
+        }
+
+        .color-0 { background-color: #2563EB; }
+        .color-1 { background-color: #DC2626; }
+        .color-2 { background-color: #D97706; }
+        .color-3 { background-color: #16A34A; }
+        .color-4 { background-color: #9333EA; }
+        .color-5 { background-color: #0891B2; }
+
+        .feedback-box {
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .feedback-box.correct {
+            display: block;
+            background-color: #DCFCE7;
+            border: 1px solid #86EFAC;
+            color: #166534;
+        }
+
+        .feedback-box.incorrect {
+            display: block;
+            background-color: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+        }
+
+        .nav-controls {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+
+        .btn-nav {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-secondary { background-color: #64748B; color: white; }
+        .btn-primary { background-color: #16A34A; color: white; }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #1E293B;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .footer-btn {
+            background: transparent;
+            border: none;
+            color: #94A3B8;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 6px 12px;
+        }
+
+        @media (max-width: 768px) {
+            main { grid-template-columns: 1fr; }
+            .sidebar-container { position: static; order: -1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="register-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Evaluación Diagnóstica</h2>
+            <p>Módulo: Redes de Área Amplia (WAN) y VPN<br><strong>CTP Santa Bárbara</strong></p>
+            <form onsubmit="startAssessment(event)">
+                <div class="input-group">
+                    <label for="student-id">Número de Cédula:</label>
+                    <input type="text" id="student-id" required placeholder="Ej: 102340567">
+                </div>
+                <div class="input-group">
+                    <label for="student-name">Nombre Completo:</label>
+                    <input type="text" id="student-name" required placeholder="Ej: Juan Pérez González">
+                </div>
+                <button type="submit" class="btn-start">Iniciar Evaluación ➔</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="results-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <h2>Resultados Finales</h2>
+            <p id="res-student-info" style="font-weight: 600; color: #1E293B;"></p>
+            <div style="margin: 20px 0; background: #F1F5F9; padding: 16px; border-radius: 12px;">
+                <div style="font-size: 2.2rem; font-weight: 800; color: #2563EB;" id="res-score">0/12</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #475569;" id="res-percentage">0%</div>
+            </div>
+            <button onclick="closeResultsModal()" class="btn-start" style="background-color: #64748B;">Revisar Examen</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-title">
+            <h1>Administración y Soporte a Redes</h1>
+            <span>WAN & VPN - 11° Año</span>
+        </div>
+        <div class="header-badges">
+            <div class="badge badge-phase" id="phase-badge">Parte 1 de 2</div>
+            <div class="badge badge-timer" id="timer-badge">⏱️ 05:00</div>
+            <div class="badge badge-progress" id="progress-badge">Progreso: 0/12</div>
+        </div>
+    </header>
+
+    <main>
+        <div class="questions-container" id="questions-container"></div>
+        <div class="sidebar-container">
+            <div class="bank-card">
+                <div class="bank-title" id="bank-title">BANCO DE RESPUESTAS</div>
+                <div class="options-list" id="options-list"></div>
+            </div>
+        </div>
+        <div class="nav-controls">
+            <button class="btn-nav btn-secondary" id="btn-prev" onclick="changePart(1)" style="visibility: hidden;">⬅ Anterior</button>
+            <button class="btn-nav btn-primary" id="btn-next" onclick="handleNextClick()">Siguiente Parte (2/2) ➔</button>
+        </div>
+    </main>
+
+    <footer>
+        <button class="footer-btn" onclick="togglePause()"><span id="pause-icon">⏸️</span> <span id="pause-text">Pausar</span></button>
+        <button class="footer-btn" onclick="toggleSound()"><span id="sound-icon">🔊</span> Sonido: ON</button>
+        <button class="footer-btn" onclick="toggleFullScreen()">🖥️ Pantalla Completa</button>
+    </footer>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/TU_ID_DE_DESPLIEGUE_AQUI/exec";
+        
+        const dataset = [
+            {
+                id: 1,
+                part: 1,
+                beforeText: "En el modelo OSI, el funcionamiento de las redes WAN se centra fundamentalmente en la Capa Física y en la Capa de ",
+                afterText: ".",
+                correct: "Enlace de Datos",
+                explanation: "Las WAN operan conectando dispositivos a grandes distancias centrando su tecnología en las Capas 1 y 2 del modelo OSI."
+            },
+            {
+                id: 2,
+                part: 1,
+                beforeText: "El límite físico exacto donde finaliza la responsabilidad del proveedor de servicios y comienza la del usuario es el ",
+                afterText: ".",
+                correct: "Punto de Demarcación",
+                explanation: "El punto de demarcación establece la frontera de responsabilidad sobre el cableado y los equipos del cliente."
+            },
+            {
+                id: 3,
+                part: 1,
+                beforeText: "El dispositivo intermedio encargado de suministrar la señal de reloj y conectar el DTE a la línea WAN es el ",
+                afterText: ".",
+                correct: "DCE",
+                explanation: "El DCE (ej. módem o CSU/DSU) convierte las señales del DTE y provee la sincronización de reloj."
+            },
+            {
+                id: 4,
+                part: 1,
+                beforeText: "La tecnología de conmutación de paquetes de WAN privada que permite asignar prioridades de QoS al tráfico de voz es ",
+                afterText: ".",
+                correct: "MPLS",
+                explanation: "MPLS (Multiprotocol Label Switching) utiliza etiquetas para enrutar paquetes y priorizar tráfico crítico en tiempo real."
+            },
+            {
+                id: 5,
+                part: 1,
+                beforeText: "El protocolo estándar de la industria en la Capa 2 para enlaces serie que soporta autenticación mediante PAP y CHAP es ",
+                afterText: ".",
+                correct: "PPP",
+                explanation: "PPP (Point-to-Point Protocol) es el estándar abierto de Capa 2 para conexiones serie seguras."
+            },
+            {
+                id: 6,
+                part: 1,
+                beforeText: "La transmisión en serie elimina los problemas de interferencia cruzada y el desfasaje de reloj denominado ",
+                afterText: ".",
+                correct: "skew",
+                explanation: "El skew o desfasaje de reloj entre hilos paralelos desaparece en transmisiones serie al enviar bits secuencialmente."
+            },
+            {
+                id: 7,
+                part: 2,
+                beforeText: "El marco de trabajo que proporciona servicios de seguridad criptográfica a nivel de Capa 3 (Red) se conoce como ",
+                afterText: ".",
+                correct: "IPsec",
+                explanation: "IPsec es un conjunto de estándares abiertos que protege las comunicaciones IP en la Capa de Red."
+            },
+            {
+                id: 8,
+                part: 2,
+                beforeText: "El protocolo de IPsec que proporciona cifrado para garantizar la confidencialidad de la carga útil es ",
+                afterText: ".",
+                correct: "ESP",
+                explanation: "ESP (Encapsulating Security Payload) cifra la carga útil de los datos a diferencia de AH que no ofrece confidencialidad."
+            },
+            {
+                id: 9,
+                part: 2,
+                beforeText: "Para ocultar la topología interna y el paquete IP original en VPNs Sitio a Sitio, IPsec debe operar en Modo ",
+                afterText: ".",
+                correct: "Túnel",
+                explanation: "El Modo Túnel encapsula todo el paquete IP original y le agrega un nuevo encabezado IP externo."
+            },
+            {
+                id: 10,
+                part: 2,
+                beforeText: "El protocolo que gestiona la negociación de claves criptográficas en un túnel IPsec utilizando el puerto UDP 500 es ",
+                afterText: ".",
+                correct: "IKE",
+                explanation: "IKE (Internet Key Exchange) gestiona en dos fases la negociación segura de parámetros y claves de la VPN."
+            },
+            {
+                id: 11,
+                part: 2,
+                beforeText: "El proceso que confirma y verifica la identidad declarada por un usuario o dispositivo responde al concepto de ",
+                afterText: ".",
+                correct: "Autenticación",
+                explanation: "La Autenticación responde a '¿Quién es usted?', mientras que la Autorización determina los permisos."
+            },
+            {
+                id: 12,
+                part: 2,
+                beforeText: "El equipo especializado diseñado para gestionar y finalizar miles de túneles VPN simultáneos es el ",
+                afterText: ".",
+                correct: "Concentrador VPN",
+                explanation: "Un Concentrador VPN es un dispositivo de alto rendimiento dedicado al procesamiento de cifrado/descifrado masivo de túneles."
+            }
+        ];
+
+        let currentPart = 1;
+        let userAnswers = {};
+        let studentData = { id: "", name: "" };
+        let timerInterval = null;
+        let timeRemaining = 300;
+        let isPaused = false;
+        let soundEnabled = true;
+        let selectedOptionText = null;
+        let isSubmitted = false;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (!soundEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'select') {
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'drop') {
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            }
+        }
+
+        function startAssessment(e) {
+            e.preventDefault();
+            studentData.id = document.getElementById('student-id').value.trim();
+            studentData.name = document.getElementById('student-name').value.trim();
+            document.getElementById('register-modal').style.display = 'none';
+            initTimer();
+            renderCurrentPart();
+        }
+
+        function initTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused && !isSubmitted) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        submitAssessment();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const min = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+            const sec = (timeRemaining % 60).toString().padStart(2, '0');
+            document.getElementById('timer-badge').innerText = `⏱️ ${min}:${sec}`;
+        }
+
+        function renderCurrentPart() {
+            const qContainer = document.getElementById('questions-container');
+            const oContainer = document.getElementById('options-list');
+            qContainer.innerHTML = '';
+            oContainer.innerHTML = '';
+
+            document.getElementById('phase-badge').innerText = `Parte ${currentPart} de 2`;
+            document.getElementById('bank-title').innerText = `BANCO DE RESPUESTAS - PARTE ${currentPart}`;
+
+            const filteredQuestions = dataset.filter(q => q.part === currentPart);
+
+            filteredQuestions.forEach(q => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                const currentValue = userAnswers[q.id] || '';
+                const filledClass = currentValue ? 'filled' : '';
+                
+                let btnColorClass = '';
+                if (currentValue) {
+                    const optIndex = filteredQuestions.findIndex(item => item.correct === currentValue);
+                    if (optIndex !== -1) btnColorClass = `color-${optIndex}`;
+                }
+
+                card.innerHTML = `
+                    <div class="question-header">
+                        <span>Ítem #${q.id}</span>
+                        <span id="status-tag-${q.id}"></span>
+                    </div>
+                    <div class="question-text">
+                        ${q.beforeText}
+                        <div class="drop-zone ${filledClass}" 
+                             id="dropzone-${q.id}" 
+                             ondrop="handleDrop(event, ${q.id})" 
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)"
+                             onclick="handleZoneClick(${q.id})">
+                            ${currentValue ? `<div class="draggable-btn ${btnColorClass}" style="cursor:pointer; width:100\%; margin:0;">${currentValue}</div>` : ''}
+                        </div>
+                        ${q.afterText}
+                    </div>
+                    <div class="feedback-box" id="feedback-${q.id}"></div>
+                `;
+                qContainer.appendChild(card);
+
+                if (isSubmitted) applyFeedbackUI(q);
+            });
+
+            filteredQuestions.forEach((q, index) => {
+                const isUsed = Object.values(userAnswers).includes(q.correct);
+                const btn = document.createElement('div');
+                btn.className = `draggable-btn color-${index} ${isUsed ? 'used' : ''}`;
+                btn.innerText = q.correct;
+
+                if (!isSubmitted && !isUsed) {
+                    btn.draggable = true;
+                    btn.ondragstart = (e) => handleDragStart(e, q.correct);
+                    btn.onclick = () => handleOptionClick(q.correct, btn);
+                }
+
+                oContainer.appendChild(btn);
+            });
+
+            document.getElementById('btn-prev').style.visibility = currentPart === 2 ? 'visible' : 'hidden';
+            const btnNext = document.getElementById('btn-next');
+            btnNext.innerText = currentPart === 1 ? 'Siguiente Parte (2/2) ➔' : (isSubmitted ? 'Ver Resultados 🏆' : 'Enviar respuestas ✔');
+            
+            document.getElementById('progress-badge').innerText = `Progreso: ${Object.keys(userAnswers).length}/12`;
+        }
+
+        function handleOptionClick(text, element) {
+            if (isSubmitted) return;
+            selectedOptionText = (selectedOptionText === text) ? null : text;
+            document.querySelectorAll('.draggable-btn').forEach(b => b.classList.remove('selected-option'));
+            if (selectedOptionText) element.classList.add('selected-option');
+            playSound('select');
+        }
+
+        function handleZoneClick(questionId) {
+            if (isSubmitted) return;
+            if (selectedOptionText) {
+                userAnswers[questionId] = selectedOptionText;
+                selectedOptionText = null;
+                playSound('drop');
+                renderCurrentPart();
+            } else if (userAnswers[questionId]) {
+                delete userAnswers[questionId];
+                renderCurrentPart();
+            }
+        }
+
+        function handleDragStart(e, text) {
+            if (isSubmitted) return;
+            e.dataTransfer.setData('text/plain', text);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            if (!isSubmitted) e.currentTarget.classList.add('hovered');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('hovered');
+        }
+
+        function handleDrop(e, questionId) {
+            e.preventDefault();
+            if (isSubmitted) return;
+            e.currentTarget.classList.remove('hovered');
+            const droppedText = e.dataTransfer.getData('text/plain');
+            if (droppedText) {
+                userAnswers[questionId] = droppedText;
+                playSound('drop');
+                renderCurrentPart();
+            }
+        }
+
+        function changePart(partNumber) {
+            currentPart = partNumber;
+            renderCurrentPart();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleNextClick() {
+            if (currentPart === 1) {
+                changePart(2);
+            } else {
+                if (isSubmitted) showResultsModal();
+                else submitAssessment();
+            }
+        }
+
+        function calculateScore() {
+            let score = 0;
+            dataset.forEach(q => {
+                if (userAnswers[q.id] === q.correct) score++;
+            });
+            return score;
+        }
+
+        function submitAssessment() {
+            if (isSubmitted) return;
+            isSubmitted = true;
+            clearInterval(timerInterval);
+            renderCurrentPart();
+            showResultsModal();
+            sendToGoogleSheets();
+        }
+
+        function applyFeedbackUI(question) {
+            const isCorrect = userAnswers[question.id] === question.correct;
+            const statusTag = document.getElementById(`status-tag-${question.id}`);
+            const feedbackBox = document.getElementById(`feedback-${question.id}`);
+
+            if (isCorrect) {
+                statusTag.innerHTML = `<span style="color:#16A34A;">✅ ¡Correcto!</span>`;
+                feedbackBox.className = 'feedback-box correct';
+                feedbackBox.innerHTML = `<strong>¡Correcto!</strong> ${question.explanation}`;
+            } else {
+                statusTag.innerHTML = `<span style="color:#DC2626;">❌ Incorrecto</span>`;
+                feedbackBox.className = 'feedback-box incorrect';
+                feedbackBox.innerHTML = `<strong>Respuesta correcta: ${question.correct}.</strong> ${question.explanation}`;
+            }
+        }
+
+        function showResultsModal() {
+            const score = calculateScore();
+            const percentage = Math.round((score / 12) * 100);
+
+            document.getElementById('res-student-info').innerText = `${studentData.name} (${studentData.id})`;
+            document.getElementById('res-score').innerText = `${score} / 12 PTS`;
+            document.getElementById('res-percentage').innerText = `${percentage}% de Acierto`;
+
+            document.getElementById('results-modal').style.display = 'flex';
+        }
+
+        function closeResultsModal() {
+            document.getElementById('results-modal').style.display = 'none';
+        }
+
+        function sendToGoogleSheets() {
+            if (!SCRIPT_URL || SCRIPT_URL.includes("TU_ID_DE_DESPLIEGUE_AQUI")) return;
+
+            const score = calculateScore();
+            const percentage = Math.round((score / 12) * 100);
+
+            const payload = {
+                cedula: studentData.id,
+                nombre: studentData.name,
+                puntaje: score,
+                porcentaje: percentage
+            };
+
+            const formData = new URLSearchParams();
+            for (const key in payload) {
+                formData.append(key, payload[key]);
+            }
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString(),
+                keepalive: true
+            });
+        }
+
+        function togglePause() {
+            if (isSubmitted) return;
+            isPaused = !isPaused;
+            document.getElementById('pause-icon').innerText = isPaused ? '▶️' : '⏸️';
+            document.getElementById('pause-text').innerText = isPaused ? 'Reanudar' : 'Pausar';
+            document.getElementById('questions-container').style.opacity = isPaused ? '0.2' : '1';
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+    </script>
+</body>
+</html>
